@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.classless.min.css"
+    />
+    <link href="/css/style.css" rel="stylesheet" />
+    <title>Sub posts</title>
+  </head>
+  <body>
+    <main>
+      <div class="authOptions">
+        <h1>r/<%= subname %></h1>
+        <a role="button" href="/">Home</a>
+        <a role="button" class="secondary" href="/subs/list">All subgroups</a>
+      </div>
+      <div>
+        <% if (!posts || posts.length === 0) { %>
+        <p>No posts in this subgroup yet.</p>
+        <% } else { %>
+        <% posts.forEach(function (post) { %>
+        <div class="individualPost">
+          <a href="/posts/show/<%= post.id %>"><%= post.title %></a>
+          <p><%= post.description %></p>
+          <p class="postMeta">
+            by <strong><%= post.creator.uname %></strong> in
+            <a href="/subs/show/<%= encodeURIComponent(post.subgroup) %>">
+              <%= post.subgroup %>
+            </a>
+          </p>
+          <div class="voteRow">
+            <span class="voteTotal">Score: <%= post.voteTotal %></span>
+            <% if (user) { %>
+            <form method="POST" action="/posts/vote/<%= post.id %>">
+              <input
+                type="hidden"
+                name="setvoteto"
+                value="<%= post.myVote === 1 ? 0 : 1 %>"
+              />
+              <button
+                type="submit"
+                class="voteButton upvote <%= post.myVote === 1 ? 'activeVote' : '' %>"
+              >
+                Up
+              </button>
+            </form>
+            <form method="POST" action="/posts/vote/<%= post.id %>">
+              <input
+                type="hidden"
+                name="setvoteto"
+                value="<%= post.myVote === -1 ? 0 : -1 %>"
+              />
+              <button
+                type="submit"
+                class="voteButton downvote <%= post.myVote === -1 ? 'activeVote' : '' %>"
+              >
+                Down
+              </button>
+            </form>
+            <% } %>
+          </div>
+        </div>
+        <% }); %>
+        <% } %>
+      </div>
+    </main>
+  </body>
+</html>

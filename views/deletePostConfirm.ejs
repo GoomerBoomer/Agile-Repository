@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.classless.min.css"
+    />
+    <link href="/css/style.css" rel="stylesheet" />
+    <title>Delete Post</title>
+  </head>
+  <body>
+    <main>
+      <div class="authOptions">
+        <h1>Delete Post?</h1>
+        <a role="button" href="/posts/show/<%= post.id %>">Cancel</a>
+      </div>
+
+      <article class="individualPost">
+        <h2><%= post.title %></h2>
+        <p><%= post.description %></p>
+        <p class="postMeta">This action cannot be undone.</p>
+      </article>
+
+      <form method="POST" action="/posts/delete/<%= post.id %>">
+        <input type="hidden" name="confirmDelete" value="yes" />
+        <button type="submit" class="contrast">Yes, Delete Post</button>
+      </form>
+
+      <form method="POST" action="/posts/delete/<%= post.id %>">
+        <input type="hidden" name="confirmDelete" value="no" />
+        <button type="submit" class="secondary">No, Keep Post</button>
+      </form>
+    </main>
+  </body>
+</html>

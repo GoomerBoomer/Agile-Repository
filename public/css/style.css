@@ -1,0 +1,60 @@
+.authOptions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.individualPost {
+  border: 1px solid #d8d8d8;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.postMeta {
+  margin-top: 0.5rem;
+  color: #555;
+}
+
+.voteRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.voteRow form {
+  margin: 0;
+}
+
+.voteTotal {
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.voteButton {
+  margin: 0;
+  min-width: 4.5rem;
+}
+
+.voteButton.activeVote.upvote {
+  background-color: #0d5f34;
+  border-color: #0d5f34;
+}
+
+.voteButton.activeVote.downvote {
+  background-color: #8a1f17;
+  border-color: #8a1f17;
+}
+
+.ownerRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.errorBox {
+  border: 1px solid #c42828;
+  color: #7f1d1d;
+  background-color: #fde8e8;
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.classless.min.css"
+    />
+    <link href="/css/style.css" rel="stylesheet" />
+    <title>Edit Post</title>
+  </head>
+  <body>
+    <main>
+      <div class="authOptions">
+        <h1>Edit Post</h1>
+        <a role="button" href="/posts/show/<%= post.id %>">Back to Post</a>
+      </div>
+
+      <% if (error) { %>
+      <article class="errorBox"><%= error %></article>
+      <% } %>
+
+      <form method="POST" action="/posts/edit/<%= post.id %>">
+        <label>
+          Title
+          <input type="text" name="title" required value="<%= post.title %>" />
+        </label>
+
+        <label>
+          Link
+          <input type="url" name="link" value="<%= post.link %>" />
+        </label>
+
+        <label>
+          Description
+          <textarea name="description"><%= post.description %></textarea>
+        </label>
+
+        <label>
+          Subgroup
+          <input type="text" name="subgroup" required value="<%= post.subgroup %>" />
+        </label>
+
+        <button type="submit">Save Changes</button>
+      </form>
+    </main>
+  </body>
+</html>
