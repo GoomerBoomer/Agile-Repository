@@ -1,5 +1,6 @@
 import * as db from "../fake-db";
 import nodemailer from "nodemailer";
+import path from "path";
 
 const pendingVerifications: Record<
   string,
@@ -60,7 +61,22 @@ export async function initiateSignup(uname: string, password: string, email: str
       to: email,
       subject: "Your Verification Code",
       text: `Your verification code is: ${code}`,
-      html: `<h2>Email Verification</h2><p>Your verification code is: <strong>${code}</strong></p><p>This code expires in 10 minutes.</p>`,
+      html: `
+        <h2>Email Verification</h2>
+        <p>Your verification code is: <strong>${code}</strong></p>
+        <p>This code expires in 10 minutes.</p>
+        <br />
+        <div>
+          <img src="cid:logo" alt="Hiroshi and Friends" style="width: 180px; height: auto;" />
+        </div>
+      `,
+      attachments: [
+        {
+          filename: "logo.png",
+          path: path.join(__dirname, "..", "public", "images", "logo.png"),
+          cid: "logo",
+        },
+      ],
     });
 
     const previewUrl = nodemailer.getTestMessageUrl(info);
