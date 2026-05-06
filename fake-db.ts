@@ -1,233 +1,278 @@
 // @ts-nocheck
-const users = {
-  1: {
-    id: 1,
-    uname: "alice",
-    password: "alpha",
-  },
-  2: {
-    id: 2,
-    uname: "theo",
-    password: "123",
-  },
-  3: {
-    id: 3,
-    uname: "prime",
-    password: "123",
-  },
-  4: {
-    id: 4,
-    uname: "leerob",
-    password: "123",
-  },
+import Database from "better-sqlite3";
+import path from "path";
+
+const db = new Database(path.join(__dirname, "app.db"));
+
+db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    uname TEXT    NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    email TEXT    NOT NULL UNIQUE
+  );
+
+  CREATE TABLE IF NOT EXISTS posts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    title       TEXT NOT NULL,
+    link        TEXT,
+    description TEXT,
+    creator     INTEGER NOT NULL REFERENCES users(id),
+    subgroup    TEXT,
+    timestamp   INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS comments (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id     INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    creator     INTEGER NOT NULL REFERENCES users(id),
+    description TEXT,
+    timestamp   INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS votes (
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    value   INTEGER NOT NULL,
+    PRIMARY KEY (user_id, post_id)
+  );
+`);
+
+// --------------- seed data (only if tables are empty) ---------------
+
+const userCount = (db.prepare("SELECT COUNT(*) as c FROM users").get() as any).c;
+if (userCount === 0) {
+  const insertUser = db.prepare(
+    "INSERT INTO users (id, uname, password, email) VALUES (?, ?, ?, ?)"
+  );
+  insertUser.run(1, "alice", "alpha", "alice@example.com");
+  insertUser.run(2, "theo", "123", "theo@example.com");
+  insertUser.run(3, "prime", "123", "prime@example.com");
+  insertUser.run(4, "leerob", "123", "leerob@example.com");
+
+  const insertPost = db.prepare(
+    "INSERT INTO posts (id, title, link, description, creator, subgroup, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  );
+  insertPost.run(
+    101,
+    "Mochido opens its new location in Coquitlam this week",
+    "https://dailyhive.com/vancouver/mochido-coquitlam-open",
+    "New mochi donut shop, Mochido, is set to open later this week.",
+    1,
+    "food",
+    1643648446955
+  );
+  insertPost.run(
+    102,
+    "2023 State of Databases for Serverless & Edge",
+    "https://leerob.io/blog/backend",
+    "An overview of databases that pair well with modern application and compute providers.",
+    4,
+    "coding",
+    1642611742010
+  );
+
+  const insertComment = db.prepare(
+    "INSERT INTO comments (id, post_id, creator, description, timestamp) VALUES (?, ?, ?, ?, ?)"
+  );
+  insertComment.run(9001, 102, 1, "Actually I learned a lot :pepega:", 1642691742010);
+
+  const insertVote = db.prepare(
+    "INSERT INTO votes (user_id, post_id, value) VALUES (?, ?, ?)"
+  );
+  insertVote.run(2, 101, 1);
+  insertVote.run(3, 101, 1);
+  insertVote.run(4, 101, 1);
+  insertVote.run(3, 102, -1);
+}
+
+// --------------- helper queries (prepared once) ---------------
+
+const stmts = {
+  getUser: db.prepare("SELECT * FROM users WHERE id = ?"),
+  getUserByUsername: db.prepare("SELECT * FROM users WHERE uname = ?"),
+  getUserByEmail: db.prepare("SELECT * FROM users WHERE email = ?"),
+  insertUser: db.prepare(
+    "INSERT INTO users (uname, password, email) VALUES (?, ?, ?)"
+  ),
+
+  getPosts: db.prepare(
+    "SELECT * FROM posts ORDER BY timestamp DESC LIMIT ?"
+  ),
+  getPostsBySub: db.prepare(
+    "SELECT * FROM posts WHERE subgroup = ? ORDER BY timestamp DESC LIMIT ?"
+  ),
+  getPost: db.prepare("SELECT * FROM posts WHERE id = ?"),
+  insertPost: db.prepare(
+    "INSERT INTO posts (title, link, description, creator, subgroup, timestamp) VALUES (?, ?, ?, ?, ?, ?)"
+  ),
+  deletePost: db.prepare("DELETE FROM posts WHERE id = ?"),
+
+  getCommentsByPost: db.prepare(
+    "SELECT * FROM comments WHERE post_id = ? ORDER BY timestamp ASC"
+  ),
+  insertComment: db.prepare(
+    "INSERT INTO comments (post_id, creator, description, timestamp) VALUES (?, ?, ?, ?)"
+  ),
+  deleteCommentsByPost: db.prepare("DELETE FROM comments WHERE post_id = ?"),
+
+  getVotesForPost: db.prepare("SELECT * FROM votes WHERE post_id = ?"),
+  getVoteForPostByUser: db.prepare(
+    "SELECT * FROM votes WHERE post_id = ? AND user_id = ?"
+  ),
+  upsertVote: db.prepare(
+    "INSERT INTO votes (user_id, post_id, value) VALUES (?, ?, ?) ON CONFLICT(user_id, post_id) DO UPDATE SET value = excluded.value"
+  ),
+  deleteVote: db.prepare(
+    "DELETE FROM votes WHERE user_id = ? AND post_id = ?"
+  ),
+  deleteVotesByPost: db.prepare("DELETE FROM votes WHERE post_id = ?"),
+
+  getSubs: db.prepare("SELECT DISTINCT subgroup FROM posts WHERE subgroup IS NOT NULL"),
 };
 
-const posts = {
-  101: {
-    id: 101,
-    title: "Mochido opens its new location in Coquitlam this week",
-    link: "https://dailyhive.com/vancouver/mochido-coquitlam-open",
-    description:
-      "New mochi donut shop, Mochido, is set to open later this week.",
-    creator: 1,
-    subgroup: "food",
-    timestamp: 1643648446955,
-  },
-  102: {
-    id: 102,
-    title: "2023 State of Databases for Serverless & Edge",
-    link: "https://leerob.io/blog/backend",
-    description:
-      "An overview of databases that pair well with modern application and compute providers.",
-    creator: 4,
-    subgroup: "coding",
-    timestamp: 1642611742010,
-  },
-};
-
-const comments = {
-  9001: {
-    id: 9001,
-    post_id: 102,
-    creator: 1,
-    description: "Actually I learned a lot :pepega:",
-    timestamp: 1642691742010,
-  },
-};
-
-const votes = [
-  { user_id: 2, post_id: 101, value: +1 },
-  { user_id: 3, post_id: 101, value: +1 },
-  { user_id: 4, post_id: 101, value: +1 },
-  { user_id: 3, post_id: 102, value: -1 },
-];
+// --------------- public API (same signatures as before) ---------------
 
 function debug() {
-  console.log("==== DB DEBUGING ====");
-  console.log("users", users);
-  console.log("posts", posts);
-  console.log("comments", comments);
-  console.log("votes", votes);
-  console.log("==== DB DEBUGING ====");
+  console.log("==== DB DEBUGGING ====");
+  console.log("users", db.prepare("SELECT * FROM users").all());
+  console.log("posts", db.prepare("SELECT * FROM posts").all());
+  console.log("comments", db.prepare("SELECT * FROM comments").all());
+  console.log("votes", db.prepare("SELECT * FROM votes").all());
+  console.log("==== DB DEBUGGING ====");
 }
 
 function getUser(id) {
-  const key = Number(id);
-  return users[key];
+  return stmts.getUser.get(Number(id)) || undefined;
 }
 
 function getUserByUsername(uname: any) {
-  return getUser(
-    Object.values(users).filter((user) => user.uname === uname)[0].id
-  );
+  return stmts.getUserByUsername.get(uname) || undefined;
+}
+
+function getUserByEmail(email: string) {
+  return stmts.getUserByEmail.get(email) || null;
+}
+
+function addUser(uname: string, password: string, email: string) {
+  const info = stmts.insertUser.run(uname, password, email);
+  return { id: info.lastInsertRowid as number, uname, password, email };
 }
 
 function getVotesForPost(post_id) {
-  return votes.filter((vote) => vote.post_id === post_id);
+  return stmts.getVotesForPost.all(Number(post_id));
 }
 
 function getVoteForPostByUser(post_id, user_id) {
-  return votes.find(
-    (vote) => vote.post_id === Number(post_id) && vote.user_id === Number(user_id)
-  );
+  return stmts.getVoteForPostByUser.get(Number(post_id), Number(user_id)) || undefined;
 }
 
 function decoratePost(post) {
-  if (!post) {
-    return null;
-  }
+  if (!post) return null;
   const unknownUser = { id: 0, uname: "Unknown", password: "" };
-  post = {
-    ...post,
-    creator: users[Number(post.creator)] || unknownUser,
-    votes: getVotesForPost(post.id),
-    comments: Object.values(comments)
-      .filter((comment) => comment.post_id === post.id)
-      .map((comment) => ({
-        ...comment,
-        creator: users[Number(comment.creator)] || unknownUser,
-      })),
-  };
-  return post;
+  const creator = getUser(post.creator) || unknownUser;
+  const votes = getVotesForPost(post.id);
+  const comments = stmts.getCommentsByPost.all(post.id).map((comment: any) => ({
+    ...comment,
+    creator: getUser(comment.creator) || unknownUser,
+  }));
+  return { ...post, creator, votes, comments };
 }
 
-/**
- * @param {*} n how many posts to get, defaults to 5
- * @param {*} sub which sub to fetch, defaults to all subs
- */
 function getPosts(n = 5, sub?: string) {
-  let allPosts = Object.values(posts);
   if (sub) {
-    allPosts = allPosts.filter((post) => post.subgroup === sub);
+    return stmts.getPostsBySub.all(sub, n);
   }
-  allPosts.sort((a, b) => b.timestamp - a.timestamp);
-  return allPosts.slice(0, n);
+  return stmts.getPosts.all(n);
 }
 
 function getPost(id) {
-  return decoratePost(posts[id]);
+  const post = stmts.getPost.get(Number(id));
+  return decoratePost(post);
 }
 
 function addPost(title, link, creator, description, subgroup) {
-  let id = Math.max(...Object.keys(posts).map(Number)) + 1;
-  let post = {
-    id,
+  const timestamp = Date.now();
+  const info = stmts.insertPost.run(
+    title,
+    link,
+    description,
+    Number(creator),
+    subgroup,
+    timestamp
+  );
+  return {
+    id: info.lastInsertRowid as number,
     title,
     link,
     description,
     creator: Number(creator),
     subgroup,
-    timestamp: Date.now(),
+    timestamp,
   };
-  posts[id] = post;
-  return post;
 }
 
-function editPost(post_id, changes = {}) {
-  let post = posts[post_id];
-  if (changes.title) {
-    post.title = changes.title;
-  }
-  if (changes.link) {
-    post.link = changes.link;
-  }
-  if (changes.description) {
-    post.description = changes.description;
-  }
-  if (changes.subgroup) {
-    post.subgroup = changes.subgroup;
-  }
+function editPost(post_id, changes: any = {}) {
+  const post = stmts.getPost.get(Number(post_id)) as any;
+  if (!post) return;
+  const title = changes.title ?? post.title;
+  const link = changes.link ?? post.link;
+  const description = changes.description ?? post.description;
+  const subgroup = changes.subgroup ?? post.subgroup;
+  db.prepare(
+    "UPDATE posts SET title = ?, link = ?, description = ?, subgroup = ? WHERE id = ?"
+  ).run(title, link, description, subgroup, Number(post_id));
 }
 
 function deletePost(post_id) {
-  for (let i = votes.length - 1; i >= 0; i -= 1) {
-    if (votes[i].post_id === Number(post_id)) {
-      votes.splice(i, 1);
-    }
-  }
-
-  Object.keys(comments).forEach((commentId) => {
-    if (comments[commentId].post_id === Number(post_id)) {
-      delete comments[commentId];
-    }
-  });
-
-  delete posts[post_id];
+  stmts.deleteVotesByPost.run(Number(post_id));
+  stmts.deleteCommentsByPost.run(Number(post_id));
+  stmts.deletePost.run(Number(post_id));
 }
 
 function getSubs() {
-  return Array.from(new Set(Object.values(posts).map((post) => post.subgroup)));
+  return stmts.getSubs.all().map((row: any) => row.subgroup);
 }
 
 function addComment(post_id, creator, description) {
-  const allCommentIds = Object.keys(comments).map(Number);
-  let id = (allCommentIds.length > 0 ? Math.max(...allCommentIds) : 9000) + 1;
-  let comment = {
-    id,
+  const timestamp = Date.now();
+  const info = stmts.insertComment.run(
+    Number(post_id),
+    Number(creator),
+    description,
+    timestamp
+  );
+  return {
+    id: info.lastInsertRowid as number,
     post_id: Number(post_id),
     creator: Number(creator),
     description,
-    timestamp: Date.now(),
+    timestamp,
   };
-  comments[id] = comment;
-  return comment;
 }
 
 function setVote(post_id, user_id, value) {
   const normalizedVote = Number(value);
-  const voteIndex = votes.findIndex(
-    (vote) => vote.post_id === Number(post_id) && vote.user_id === Number(user_id)
-  );
-
-  if (![1, -1, 0].includes(normalizedVote)) {
-    return null;
-  }
+  if (![1, -1, 0].includes(normalizedVote)) return null;
 
   if (normalizedVote === 0) {
-    if (voteIndex >= 0) {
-      votes.splice(voteIndex, 1);
-    }
+    stmts.deleteVote.run(Number(user_id), Number(post_id));
     return { user_id: Number(user_id), post_id: Number(post_id), value: 0 };
   }
 
-  if (voteIndex >= 0) {
-    votes[voteIndex].value = normalizedVote;
-    return votes[voteIndex];
-  }
-
-  const newVote = {
-    user_id: Number(user_id),
-    post_id: Number(post_id),
-    value: normalizedVote,
-  };
-  votes.push(newVote);
-  return newVote;
+  stmts.upsertVote.run(Number(user_id), Number(post_id), normalizedVote);
+  return { user_id: Number(user_id), post_id: Number(post_id), value: normalizedVote };
 }
 
 export {
   debug,
   getUser,
   getUserByUsername,
+  getUserByEmail,
+  addUser,
   getPosts,
   getPost,
   getVoteForPostByUser,

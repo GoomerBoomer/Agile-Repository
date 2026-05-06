@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.classless.min.css"
+    />
+    <link href="/css/style.css" rel="stylesheet" />
+    <title>Verify Email</title>
+  </head>
+  <body>
+    <main>
+      <div class="box">
+        <h1>Verify Your Email</h1>
+        <p>A 4-digit verification code has been sent to <strong><%= email %></strong>.</p>
+        <% if (error) { %>
+          <p style="color: red;"><%= error %></p>
+        <% } %>
+        <form action="/auth/verify" method="post">
+          <input type="hidden" name="email" value="<%= email %>" />
+          <input
+            type="text"
+            name="code"
+            id="code"
+            placeholder="4-digit code"
+            maxlength="4"
+            pattern="\d{4}"
+            required
+          />
+          <button type="submit">Verify</button>
+        </form>
+      </div>
+    </main>
+  </body>
+</html>
