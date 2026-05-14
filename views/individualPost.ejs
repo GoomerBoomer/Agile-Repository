@@ -4,96 +4,98 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.classless.min.css"
-    />
-    <link href="/css/style.css" rel="stylesheet" />
-    <title>Post</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <title><%= post.title %> – Hiroshi and Friends</title>
   </head>
   <body>
-    <main>
-      <div class="authOptions">
-        <h1>View Post</h1>
-        <a role="button" href="/">Home</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="site-title">
+          <a href="/"><img src="/images/logo.png" alt="Hiroshi and Friends" class="site-logo" /></a>
+        </div>
+        <nav class="header-nav">
+          <a href="/" class="btn btn-outline">← Home</a>
+        </nav>
       </div>
+    </header>
 
-      <article class="individualPost">
-        <h2><a href="<%= post.link || '#' %>"><%= post.title %></a></h2>
-        <p><%= post.description %></p>
+    <main class="main-content">
 
-        <p class="postMeta">
-          Posted by <strong><%= post.creator.uname %></strong> in
-          <a href="/subs/show/<%= encodeURIComponent(post.subgroup) %>">
-            <%= post.subgroup %>
-          </a>
-          at <%= new Date(post.timestamp).toLocaleString() %>
-        </p>
+      <div class="post-card post-card--full">
+        <div class="post-body">
+          <h2 class="post-title-large">
+            <a href="<%= post.link || '#' %>"><%= post.title %></a>
+          </h2>
+          <p class="post-desc"><%= post.description %></p>
+          <p class="post-meta">
+            Posted by <strong><%= post.creator.uname %></strong> &middot;
+            <a href="/subs/show/<%= encodeURIComponent(post.subgroup) %>"><%= post.subgroup %></a>
+            &middot; <%= new Date(post.timestamp).toLocaleString() %>
+          </p>
+        </div>
 
-        <div class="voteRow">
-          <span class="voteTotal">Score: <%= voteTotal %></span>
+        <div class="vote-area">
+          <span class="score-label">Score: <strong><%= voteTotal %></strong></span>
           <% if (user) { %>
-          <form method="POST" action="/posts/vote/<%= post.id %>">
-            <input type="hidden" name="setvoteto" value="<%= myVote === 1 ? 0 : 1 %>" />
-            <button
-              type="submit"
-              class="voteButton upvote <%= myVote === 1 ? 'activeVote' : '' %>"
-            >
-              Up
-            </button>
-          </form>
-
-          <form method="POST" action="/posts/vote/<%= post.id %>">
-            <input type="hidden" name="setvoteto" value="<%= myVote === -1 ? 0 : -1 %>" />
-            <button
-              type="submit"
-              class="voteButton downvote <%= myVote === -1 ? 'activeVote' : '' %>"
-            >
-              Down
-            </button>
-          </form>
+          <div class="vote-buttons">
+            <form method="POST" action="/posts/vote/<%= post.id %>">
+              <input type="hidden" name="setvoteto" value="<%= myVote === 1 ? 0 : 1 %>" />
+              <button type="submit" class="vote-btn up <%= myVote === 1 ? 'active' : '' %>">▲ Up</button>
+            </form>
+            <form method="POST" action="/posts/vote/<%= post.id %>">
+              <input type="hidden" name="setvoteto" value="<%= myVote === -1 ? 0 : -1 %>" />
+              <button type="submit" class="vote-btn down <%= myVote === -1 ? 'active' : '' %>">▼ Down</button>
+            </form>
+          </div>
           <% } %>
         </div>
 
         <% if (isOwner) { %>
-        <div class="ownerRow">
-          <a role="button" href="/posts/edit/<%= post.id %>">Edit</a>
-          <a role="button" class="secondary" href="/posts/deleteconfirm/<%= post.id %>">
-            Delete
-          </a>
+        <div class="owner-actions">
+          <a href="/posts/edit/<%= post.id %>" class="btn btn-sm">Edit</a>
+          <a href="/posts/deleteconfirm/<%= post.id %>" class="btn btn-sm btn-danger">Delete</a>
         </div>
         <% } %>
-      </article>
+      </div>
 
-      <section>
-        <h3>Comments</h3>
+      <section class="comments-section">
+        <h3 class="section-heading">Comments</h3>
 
         <% if (user) { %>
-        <form method="POST" action="/posts/comment-create/<%= post.id %>">
-          <label>
-            Add Comment
-            <textarea name="description" required></textarea>
-          </label>
-          <button type="submit">Post Comment</button>
-        </form>
+        <div class="form-card form-card--compact">
+          <form method="POST" action="/posts/comment-create/<%= post.id %>">
+            <div class="form-group">
+              <label for="comment">Leave a comment</label>
+              <textarea id="comment" name="description" rows="3" required></textarea>
+            </div>
+            <button type="submit" class="btn">Post Comment</button>
+          </form>
+        </div>
         <% } else { %>
-        <p><a href="/auth/login">Login</a> to comment or vote.</p>
+        <p class="login-nudge"><a href="/auth/login">Log in</a> to comment or vote.</p>
         <% } %>
 
         <% if (post.comments.length === 0) { %>
-        <p>No comments yet.</p>
+          <p class="no-posts">No comments yet. Start the conversation!</p>
         <% } %>
 
         <% post.comments.forEach(comment => { %>
-        <article>
-          <p><%= comment.description %></p>
-          <small>
+        <div class="comment-card">
+          <p class="comment-text"><%= comment.description %></p>
+          <p class="comment-meta">
             by <strong><%= comment.creator.uname %></strong>
-            at <%= new Date(comment.timestamp).toLocaleString() %>
-          </small>
-        </article>
+            &middot; <%= new Date(comment.timestamp).toLocaleString() %>
+          </p>
+        </div>
         <% }) %>
       </section>
+
     </main>
+
+    <footer class="site-footer">
+      <p>Hiroshi and Friends &copy; 2025</p>
+    </footer>
+
   </body>
 </html>

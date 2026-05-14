@@ -4,81 +4,78 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.classless.min.css"
-    />
-    <link href="/css/style.css" rel="stylesheet" />
-    <title>Homepage</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <title>Hiroshi and Friends</title>
   </head>
   <body>
-    <main>
-      <div class="authOptions">
-        <h1>Homepage</h1>
-        <% if (!user) { %>
-        <a role="button" href="/auth/login">Login</a>
-        <% } else { %>
-        <a role="button" href="/auth/logout">Logout</a>
-        <% } %>
-      </div>
-      <h2>Welcome, <%= user?.uname || "Visitor" %></h2>
-      <div>
-        <p>All Posts</p>
-        <% posts.forEach(post => { %>
-        <div class="individualPost">
-          <a href="/posts/show/<%=post.id%>"><%= post.title %></a>
-          <p><%= post.description %></p>
-          <p class="postMeta">
-            by <strong><%= post.creator.uname %></strong> in
-            <a href="/subs/show/<%= encodeURIComponent(post.subgroup) %>">
-              <%= post.subgroup %>
-            </a>
-          </p>
 
-          <div class="voteRow">
-            <span class="voteTotal">Score: <%= post.voteTotal %></span>
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="site-title">
+          <a href="/"><img src="/images/logo.png" alt="Hiroshi and Friends" class="site-logo" /></a>
+        </div>
+        <nav class="header-nav">
+          <a href="/subs/list">Subgroups</a>
+          <% if (!user) { %>
+            <a href="/auth/login" class="btn">Login</a>
+          <% } else { %>
             <% if (user) { %>
-            <form method="POST" action="/posts/vote/<%= post.id %>">
-              <input
-                type="hidden"
-                name="setvoteto"
-                value="<%= post.myVote === 1 ? 0 : 1 %>"
-              />
-              <button
-                type="submit"
-                class="voteButton upvote <%= post.myVote === 1 ? 'activeVote' : '' %>"
-              >
-                Up
-              </button>
-            </form>
-            <form method="POST" action="/posts/vote/<%= post.id %>">
-              <input
-                type="hidden"
-                name="setvoteto"
-                value="<%= post.myVote === -1 ? 0 : -1 %>"
-              />
-              <button
-                type="submit"
-                class="voteButton downvote <%= post.myVote === -1 ? 'activeVote' : '' %>"
-              >
-                Down
-              </button>
-            </form>
+              <a href="/posts/create" class="btn btn-create">+ New Post</a>
+            <% } %>
+            <a href="/auth/logout" class="btn btn-outline">Logout</a>
+          <% } %>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main-content">
+
+      <div class="welcome-bar">
+        <p>Welcome back, <strong><%= user?.uname || "Visitor" %></strong>! 👋</p>
+      </div>
+
+      <section class="posts-section">
+        <h2 class="section-heading">All Posts</h2>
+
+        <% if (posts.length === 0) { %>
+          <p class="no-posts">No posts yet. Be the first to share something!</p>
+        <% } %>
+
+        <% posts.forEach(post => { %>
+        <div class="post-card">
+          <div class="post-body">
+            <a class="post-title" href="/posts/show/<%= post.id %>"><%= post.title %></a>
+            <p class="post-desc"><%= post.description %></p>
+            <p class="post-meta">
+              Posted by <strong><%= post.creator.uname %></strong> &middot;
+              <a href="/subs/show/<%= encodeURIComponent(post.subgroup) %>"><%= post.subgroup %></a>
+            </p>
+          </div>
+
+          <div class="vote-area">
+            <span class="score-label">Score: <strong><%= post.voteTotal %></strong></span>
+            <% if (user) { %>
+            <div class="vote-buttons">
+              <form method="POST" action="/posts/vote/<%= post.id %>">
+                <input type="hidden" name="setvoteto" value="<%= post.myVote === 1 ? 0 : 1 %>" />
+                <button type="submit" class="vote-btn up <%= post.myVote === 1 ? 'active' : '' %>">▲ Up</button>
+              </form>
+              <form method="POST" action="/posts/vote/<%= post.id %>">
+                <input type="hidden" name="setvoteto" value="<%= post.myVote === -1 ? 0 : -1 %>" />
+                <button type="submit" class="vote-btn down <%= post.myVote === -1 ? 'active' : '' %>">▼ Down</button>
+              </form>
+            </div>
             <% } %>
           </div>
         </div>
         <% }) %>
-      </div>
+      </section>
 
-      <div>
-        <a href="/subs/list">Subgroups</a>
-      </div>
-
-      <% if (user) { %>
-      <div>
-        <a role="button" href="/posts/create">Create Post</a>
-      </div>
-      <% } %>
     </main>
+
+    <footer class="site-footer">
+      <p>Hiroshi and Friends &copy; 2025</p>
+    </footer>
+
   </body>
 </html>
