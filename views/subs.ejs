@@ -4,32 +4,41 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.classless.min.css"
-    />
-    <link href="/css/style.css" rel="stylesheet" />
-    <title>Subs</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <title>Subgroups – Hiroshi and Friends</title>
   </head>
   <body>
-    <main>
-      <div class="authOptions">
-        <h1>Subgroups</h1>
-        <a role="button" href="/">Home</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="site-title">
+          <a href="/"><img src="/images/logo.png" alt="Hiroshi and Friends" class="site-logo" /></a>
+        </div>
+        <nav class="header-nav">
+          <a href="/" class="btn btn-outline">← Home</a>
+        </nav>
       </div>
-      <div>
-        <% if (!subs || subs.length === 0) { %>
-        <p>No subgroups yet. Create a post with a subgroup to add one.</p>
-        <% } else { %>
-        <ul>
-          <% subs.forEach(function (name) { %>
-          <li>
-            <a href="/subs/show/<%= encodeURIComponent(name) %>"><%= name %></a>
-          </li>
+    </header>
+
+    <main class="main-content">
+      <h2 class="section-heading">All Subgroups</h2>
+
+      <% if (!subs || subs.length === 0) { %>
+        <p class="no-posts">No subgroups yet. Create a post with a subgroup to add one.</p>
+      <% } else { %>
+        <div class="subs-list">
+          <% subs.forEach(function(name) { %>
+            <a class="sub-item" href="/subs/show/<%= encodeURIComponent(name) %>">
+              <span class="sub-prefix">r/</span><%= name %>
+            </a>
           <% }); %>
-        </ul>
-        <% } %>
-      </div>
+        </div>
+      <% } %>
     </main>
+
+    <footer class="site-footer">
+      <p>Hiroshi and Friends &copy; 2026</p>
+    </footer>
+
   </body>
 </html>
