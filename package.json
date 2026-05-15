@@ -6,11 +6,11 @@
   "scripts": {
     "rebuild-sqlite": "npm rebuild better-sqlite3",
     "start": "tsx watch --env-file=.env app.ts",
-    "test": "jest"
+    "test": "jest",
+    "deploy": "tsx scripts/update.ts"
   },
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^4.11.0",
     "better-sqlite3": "^12.9.0",
     "body-parser": "^1.20.1",
     "cookie-parser": "^1.4.6",
@@ -34,10 +34,10 @@
     "@types/supertest": "^7.2.0",
     "jest": "^30.4.1",
     "nodemon": "^2.0.20",
-    "prisma": "^4.11.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.1",
+    "tsx": "^4.19.0",
     "typescript": "^5.0.2"
   }
 }

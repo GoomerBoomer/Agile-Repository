@@ -25,6 +25,7 @@ import indexRoute from "./routers/indexRoute";
 import authRoute from "./routers/authRoute";
 import postsRoute from "./routers/postRouters";
 import subsRouters from "./routers/subsRouters";
+import notificationRoute from "./routers/notificationRoute";
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -34,6 +35,7 @@ app.use(passport.session());
 app.use("/auth", authRoute);
 app.use("/posts", postsRoute);
 app.use("/subs", subsRouters);
+app.use("/notifications", notificationRoute);
 app.use("/", indexRoute);
 
 if (process.env.NODE_ENV !== "test") {
