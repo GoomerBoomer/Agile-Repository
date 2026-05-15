@@ -36,6 +36,10 @@ app.use("/posts", postsRoute);
 app.use("/subs", subsRouters);
 app.use("/", indexRoute);
 
-app.listen(PORT, () =>
-  console.log(`server should be running at http://localhost:${PORT}/`)
-);
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () =>
+    console.log(`server should be running at http://localhost:${PORT}/`)
+  );
+}
+
+export default app;

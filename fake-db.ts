@@ -53,40 +53,6 @@ if (userCount === 0) {
   insertUser.run(3, "prime", "123", "prime@example.com");
   insertUser.run(4, "leerob", "123", "leerob@example.com");
 
-  const insertPost = db.prepare(
-    "INSERT INTO posts (id, title, link, description, creator, subgroup, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  );
-  insertPost.run(
-    101,
-    "Mochido opens its new location in Coquitlam this week",
-    "https://dailyhive.com/vancouver/mochido-coquitlam-open",
-    "New mochi donut shop, Mochido, is set to open later this week.",
-    1,
-    "food",
-    1643648446955
-  );
-  insertPost.run(
-    102,
-    "2023 State of Databases for Serverless & Edge",
-    "https://leerob.io/blog/backend",
-    "An overview of databases that pair well with modern application and compute providers.",
-    4,
-    "coding",
-    1642611742010
-  );
-
-  const insertComment = db.prepare(
-    "INSERT INTO comments (id, post_id, creator, description, timestamp) VALUES (?, ?, ?, ?, ?)"
-  );
-  insertComment.run(9001, 102, 1, "Actually I learned a lot :pepega:", 1642691742010);
-
-  const insertVote = db.prepare(
-    "INSERT INTO votes (user_id, post_id, value) VALUES (?, ?, ?)"
-  );
-  insertVote.run(2, 101, 1);
-  insertVote.run(3, 101, 1);
-  insertVote.run(4, 101, 1);
-  insertVote.run(3, 102, -1);
 }
 
 // --------------- helper queries (prepared once) ---------------
