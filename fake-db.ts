@@ -9,10 +9,11 @@ db.pragma("foreign_keys = ON");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
-    id    INTEGER PRIMARY KEY AUTOINCREMENT,
-    uname TEXT    NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    email TEXT    NOT NULL UNIQUE
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    uname    TEXT    NOT NULL UNIQUE,
+    password TEXT    NOT NULL,
+    email    TEXT    NOT NULL UNIQUE,
+    is_admin INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS posts (
@@ -40,28 +41,28 @@ db.exec(`
     PRIMARY KEY (user_id, post_id)
   );
 
-  CREATE TABLE IF NOT EXISTS notifications (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    recipient_id INTEGER NOT NULL REFERENCES users(id),
-    actor_id     INTEGER NOT NULL REFERENCES users(id),
-    type         TEXT    NOT NULL,
-    resource_id  INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    is_read      INTEGER NOT NULL DEFAULT 0,
-    created_at   INTEGER NOT NULL
-  );
 `);
+
+// --------------- migrations ---------------
+
+const userColumns = db.prepare("PRAGMA table_info(users)").all() as any[];
+if (!userColumns.some((col: any) => col.name === "is_admin")) {
+  db.exec("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0");
+}
+
+db.prepare("UPDATE users SET is_admin = 1 WHERE uname = 'hiroshi'").run();
 
 // --------------- seed data (only if tables are empty) ---------------
 
 const userCount = (db.prepare("SELECT COUNT(*) as c FROM users").get() as any).c;
 if (userCount === 0) {
   const insertUser = db.prepare(
-    "INSERT INTO users (id, uname, password, email) VALUES (?, ?, ?, ?)"
+    "INSERT INTO users (id, uname, password, email, is_admin) VALUES (?, ?, ?, ?, ?)"
   );
-  insertUser.run(1, "alice", "alpha", "alice@example.com");
-  insertUser.run(2, "theo", "123", "theo@example.com");
-  insertUser.run(3, "prime", "123", "prime@example.com");
-  insertUser.run(4, "leerob", "123", "leerob@example.com");
+  insertUser.run(1, "alice", "alpha", "alice@example.com", 0);
+  insertUser.run(2, "theo", "123", "theo@example.com", 0);
+  insertUser.run(3, "prime", "123", "prime@example.com", 0);
+  insertUser.run(4, "leerob", "123", "leerob@example.com", 0);
 
 }
 
@@ -108,22 +109,6 @@ const stmts = {
   deleteVotesByPost: db.prepare("DELETE FROM votes WHERE post_id = ?"),
 
   getSubs: db.prepare("SELECT DISTINCT subgroup FROM posts WHERE subgroup IS NOT NULL"),
-
-  insertNotification: db.prepare(
-    "INSERT INTO notifications (recipient_id, actor_id, type, resource_id, is_read, created_at) VALUES (?, ?, ?, ?, 0, ?)"
-  ),
-  getNotificationsForUser: db.prepare(
-    "SELECT n.*, u.uname AS actor_name, p.title AS post_title FROM notifications n JOIN users u ON n.actor_id = u.id JOIN posts p ON n.resource_id = p.id WHERE n.recipient_id = ? ORDER BY n.created_at DESC LIMIT ?"
-  ),
-  getUnreadCountForUser: db.prepare(
-    "SELECT COUNT(*) AS count FROM notifications WHERE recipient_id = ? AND is_read = 0"
-  ),
-  markNotificationRead: db.prepare(
-    "UPDATE notifications SET is_read = 1 WHERE id = ? AND recipient_id = ?"
-  ),
-  markAllNotificationsRead: db.prepare(
-    "UPDATE notifications SET is_read = 1 WHERE recipient_id = ? AND is_read = 0"
-  ),
 };
 
 // --------------- public API (same signatures as before) ---------------
@@ -246,31 +231,6 @@ function addComment(post_id, creator, description) {
   };
 }
 
-function addNotification(recipientId, actorId, type, resourceId) {
-  if (Number(recipientId) === Number(actorId)) return null;
-  const created_at = Date.now();
-  const info = stmts.insertNotification.run(
-    Number(recipientId), Number(actorId), type, Number(resourceId), created_at
-  );
-  return { id: info.lastInsertRowid as number, recipient_id: Number(recipientId), actor_id: Number(actorId), type, resource_id: Number(resourceId), is_read: 0, created_at };
-}
-
-function getNotificationsForUser(userId, limit = 20) {
-  return stmts.getNotificationsForUser.all(Number(userId), limit);
-}
-
-function getUnreadNotificationCount(userId) {
-  return (stmts.getUnreadCountForUser.get(Number(userId)) as any).count;
-}
-
-function markNotificationRead(notificationId, userId) {
-  stmts.markNotificationRead.run(Number(notificationId), Number(userId));
-}
-
-function markAllNotificationsRead(userId) {
-  stmts.markAllNotificationsRead.run(Number(userId));
-}
-
 function setVote(post_id, user_id, value) {
   const normalizedVote = Number(value);
   if (![1, -1, 0].includes(normalizedVote)) return null;
@@ -300,9 +260,4 @@ export {
   addComment,
   setVote,
   decoratePost,
-  addNotification,
-  getNotificationsForUser,
-  getUnreadNotificationCount,
-  markNotificationRead,
-  markAllNotificationsRead,
 };

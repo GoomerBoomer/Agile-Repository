@@ -1,8 +1,6 @@
 // @ts-nocheck
 import express from "express";
 import * as database from "../controller/postController";
-import * as notifications from "../controller/notificationController";
-import { sendToUser } from "../notificationEmitter";
 const router = express.Router();
 import { ensureAuthenticated } from "../middleware/checkAuth";
 
@@ -84,7 +82,7 @@ router.get("/show/:postid", async (req, res) => {
     user,
     voteTotal,
     myVote,
-    isOwner: user && post.creator.id === user.id,
+    isOwner: user && (post.creator.id === user.id || user.is_admin),
   });
 });
 
@@ -97,7 +95,7 @@ router.get("/edit/:postid", ensureAuthenticated, async (req, res) => {
     return res.status(404).send("Post not found");
   }
 
-  if (post.creator.id !== user.id) {
+  if (post.creator.id !== user.id && !user.is_admin) {
     return res.status(403).send("You can only edit your own posts.");
   }
 
@@ -113,7 +111,7 @@ router.post("/edit/:postid", ensureAuthenticated, async (req, res) => {
     return res.status(404).send("Post not found");
   }
 
-  if (post.creator.id !== user.id) {
+  if (post.creator.id !== user.id && !user.is_admin) {
     return res.status(403).send("You can only edit your own posts.");
   }
 
@@ -155,7 +153,7 @@ router.get("/deleteconfirm/:postid", ensureAuthenticated, async (req, res) => {
     return res.status(404).send("Post not found");
   }
 
-  if (post.creator.id !== user.id) {
+  if (post.creator.id !== user.id && !user.is_admin) {
     return res.status(403).send("You can only delete your own posts.");
   }
 
@@ -171,7 +169,7 @@ router.post("/delete/:postid", ensureAuthenticated, async (req, res) => {
     return res.status(404).send("Post not found");
   }
 
-  if (post.creator.id !== user.id) {
+  if (post.creator.id !== user.id && !user.is_admin) {
     return res.status(403).send("You can only delete your own posts.");
   }
 
@@ -200,16 +198,6 @@ router.post("/vote/:postid", ensureAuthenticated, async (req, res) => {
   }
 
   await database.setVote(postId, user.id, targetVote);
-
-  if (targetVote !== 0 && post.creator.id !== user.id) {
-    const type = targetVote === 1 ? "upvote" : "downvote";
-    const notif = await notifications.addNotification(post.creator.id, user.id, type, postId);
-    if (notif) {
-      const count = await notifications.getUnreadCount(post.creator.id);
-      sendToUser(post.creator.id, { type: "new_notification", notification: { ...notif, actor_name: user.uname, post_title: post.title }, unreadCount: count });
-    }
-  }
-
   res.redirect(`/posts/show/${postId}`);
 });
 
@@ -231,15 +219,6 @@ router.post(
     }
 
     await database.addComment(postId, user.id, description);
-
-    if (post.creator.id !== user.id) {
-      const notif = await notifications.addNotification(post.creator.id, user.id, "comment", postId);
-      if (notif) {
-        const count = await notifications.getUnreadCount(post.creator.id);
-        sendToUser(post.creator.id, { type: "new_notification", notification: { ...notif, actor_name: user.uname, post_title: post.title }, unreadCount: count });
-      }
-    }
-
     res.redirect(`/posts/show/${postId}`);
   }
 );
