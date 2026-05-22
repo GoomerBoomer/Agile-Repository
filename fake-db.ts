@@ -243,7 +243,35 @@ function setVote(post_id, user_id, value) {
   stmts.upsertVote.run(Number(user_id), Number(post_id), normalizedVote);
   return { user_id: Number(user_id), post_id: Number(post_id), value: normalizedVote };
 }
+function isUserAdmin(userId: number): boolean {
+  const user = stmts.getUser.get(Number(userId)) as any;
+  return user?.is_admin === 1;
+}
 
+function setUserAdmin(userId: number, isAdmin: boolean) {
+  db.prepare("UPDATE users SET is_admin = ? WHERE id = ?").run(
+    isAdmin ? 1 : 0,
+    Number(userId)
+  );
+}
+
+function canEditPost(userId: number, postId: number): boolean {
+  const user = stmts.getUser.get(Number(userId)) as any;
+  const post = stmts.getPost.get(Number(postId)) as any;
+  if (!user || !post) return false;
+  return user.is_admin === 1 || post.creator === Number(userId);
+}
+
+function canDeletePost(userId: number, postId: number): boolean {
+  return canEditPost(userId, postId); // same rules
+}
+
+function canDeleteComment(userId: number, commentId: number): boolean {
+  const user = stmts.getUser.get(Number(userId)) as any;
+  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(Number(commentId)) as any;
+  if (!user || !comment) return false;
+  return user.is_admin === 1 || comment.creator === Number(userId);
+}
 export {
   debug,
   getUser,
@@ -260,4 +288,9 @@ export {
   addComment,
   setVote,
   decoratePost,
+  isUserAdmin,       // add
+  setUserAdmin,      // add
+  canEditPost,       // add
+  canDeletePost,     // add
+  canDeleteComment,  // add
 };
